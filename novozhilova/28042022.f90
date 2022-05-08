@@ -5,12 +5,13 @@ program sys15f
 
     implicit none
 
-namelist /param/ ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
+    namelist /param/ ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, &
+        dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
 
-    integer(c_int) ne, nt, nz, i
+    integer(c_int) ne, nt, nz, i, j
     real(c_double) tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
     complex(c_double_complex), allocatable, target :: f(:, :), p(:, :), mean(:) !, oscill(:, :)
-    real(c_double), allocatable, target :: tax(:), zax(:), u(:), eta(:, :), etag(:, :)
+    real(c_double), allocatable, target :: tax(:), zax(:), u(:), eta(:, :), etag(:, :), w(:, :)
     type(parametersf) paramf
     type(parametersp) paramp
     !complex(c_double_complex), pointer :: ff(:, :), pp(:, :)
@@ -109,7 +110,8 @@ namelist /param/ ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2
     !end subroutine ode4
     !end interface
 
-call read_param(ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch)
+    call read_param(ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, &
+                    dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch)
     write (*, nml=param)
 
     !par%gamma = 0.1
@@ -119,7 +121,7 @@ call read_param(ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2,
     nz = zex/dz + 1
 
     !call allocate_arrays(nz, nt, ne, f, p1, p2, u, tax, zax, oscill)
-    call allocate_arrays(nz, nt, ne, f, p, u, tax, zax, mean, eta, etag)
+    call allocate_arrays(nz, nt, ne, f, p, u, tax, zax, mean, eta, etag, w)
 
     f(1, 1) = f10
     f(2, 1) = f20
@@ -165,7 +167,7 @@ call read_param(ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2,
     do i = 1, ne
         paramp%p(i, 1) = exp(ic*(i - 1)/dble(ne)*2*pi)
         paramp%p(ne + i, 1) = exp(ic*(i - 1)/dble(ne)*2*pi)
-        !print *, paramp%p(i, 1)
+        !print *, exp(ic*(i - 1)/dble(ne)*2*pi)
     end do
 
     call calc_u(u, zex, nz, zax)
@@ -178,8 +180,14 @@ call read_param(ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2,
 
     call ode4f(dfdt, paramf%f, 3, nt, 0.0d0, dt, paramf, paramp)
 
+    do i = 2, nt
+        do j = 1, 3
+            w(j, i - 1) = imag(log(f(j, i)/f(j, i - 1)))/dt
+        end do
+    end do
+
     write (*, '(/)')
-    
+
     pause
 
     open (1, file='F.dat')
@@ -192,6 +200,11 @@ call read_param(ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2,
         write (2, '(5e17.8)') tax(i), eta(1, i), etag(1, i), eta(2, i), etag(2, i)
     end do
     close (2)
+    open (3, file='W.dat')
+    do i = 1, nt - 1
+        write (3, '(4e17.8)') tax(i + 1), w(1, i), w(2, i), w(3, i)
+    end do
+    close (3)
 
 end program
 

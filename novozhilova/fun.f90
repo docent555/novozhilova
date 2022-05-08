@@ -6,18 +6,18 @@ module fun
     real(c_double), parameter :: pi = 2.0D0*dacos(0.0D0)
 
 contains
-    subroutine allocate_arrays(nz, nt, ne, f, p, u, t, z, mean, eta, etag)!, oscill)
+    subroutine allocate_arrays(nz, nt, ne, f, p, u, t, z, mean, eta, etag, w)!, oscill)
         use, intrinsic :: iso_c_binding
         implicit none
 
         integer, intent(in) :: nz, nt, ne
         complex(c_double_complex), allocatable, intent(inout) :: f(:, :), p(:, :), mean(:)!, oscill(:, :)
-        real(c_double), allocatable, intent(inout) :: t(:), z(:), u(:), eta(:, :), etag(:, :)
+        real(c_double), allocatable, intent(inout) :: t(:), z(:), u(:), eta(:, :), etag(:, :), w(:, :)
 
         integer(c_int) err_alloc
 
         !allocate (f(nt, 3), p1(nz, ne), p2(nz, ne), u(nz), t(nt), z(nz), oscill(nt, 1), stat=err_alloc)
-        allocate (f(3, nt), p(2*ne, nz), u(nz), t(nt), z(nz), mean(nz), eta(2, nt), etag(2, nt), stat=err_alloc)
+        allocate (f(3, nt), p(2*ne, nz), u(nz), t(nt), z(nz), mean(nz), eta(2, nt), etag(2, nt), w(3, nt - 1), stat=err_alloc)
 
         if (err_alloc /= 0) then
             print *, "allocation error"
@@ -105,7 +105,7 @@ namelist /param/ ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2
             paramp%eta(:, i + 1) = eff(paramp%p(:, paramp%nz), paramp%ne)
             paramp%etag(:, i + 1) = paramf%pitch**2/(paramf%pitch**2 + 1)*paramp%eta(:, i + 1)
 
-            write (*, '(a,f10.7,a,f10.7,a,f10.7,a,f10.7,a,f10.7,a,f10.7,\,a)') 'Time = ', t + h, '   |F1| = ', abs(y(1, i + 1)), '   |F2| = ', abs(y(2, i + 1)), '   |F3| = ', abs(y(3, i + 1)), &
+            write (*, '(a,f12.7,a,f10.7,a,f10.7,a,f10.7,a,f10.7,a,f10.7,\,a)') 'Time = ', t + h, '   |F1| = ', abs(y(1, i + 1)), '   |F2| = ', abs(y(2, i + 1)), '   |F3| = ', abs(y(3, i + 1)), &
                 '   Eff1 = ', paramp%eta(1, i + 1), '   Eff2 = ', paramp%eta(2, i + 1), char(13)
 
             pressed = peekcharqq()
@@ -173,6 +173,10 @@ namelist /param/ ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2
             s4(:) = dydt(z + h, v + h*s3(:), params)
             y(:, i + 1) = v + h*(s1(:) + 2*s2(:) + 2*s3(:) + s4(:))/6
         end do
+        !do i=1,size(y,1)
+        !      print *, y(i,1)
+        !enddo
+        !pause
     end subroutine ode4p
 
     function dpdz(z, p, params) result(s)
