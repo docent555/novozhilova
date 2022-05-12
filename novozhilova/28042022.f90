@@ -11,7 +11,7 @@ program sys15f
     integer(c_int) ne, nt, nz, i, j
     real(c_double) tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
     complex(c_double_complex), allocatable, target :: f(:, :), p(:, :), mean(:) !, oscill(:, :)
-    real(c_double), allocatable, target :: tax(:), zax(:), u(:), eta(:, :), etag(:, :), w(:, :)
+    real(c_double), allocatable, target :: tax(:), zax(:), u(:), eta(:, :), etag(:, :), w(:, :), phi(:, :)
     type(parametersf) paramf
     type(parametersp) paramp
     !complex(c_double_complex), pointer :: ff(:, :), pp(:, :)
@@ -121,7 +121,7 @@ program sys15f
     nz = zex/dz + 1
 
     !call allocate_arrays(nz, nt, ne, f, p1, p2, u, tax, zax, oscill)
-    call allocate_arrays(nz, nt, ne, f, p, u, tax, zax, mean, eta, etag, w)
+    call allocate_arrays(nz, nt, ne, f, p, u, tax, zax, mean, eta, etag, w, phi)
 
     f(1, 1) = f10
     f(2, 1) = f20
@@ -180,6 +180,13 @@ program sys15f
 
     call ode4f(dfdt, paramf%f, 3, nt, 0.0d0, dt, paramf, paramp)
 
+    phi(:, 1) = 0;  
+    do i = 2, nt
+        do j = 1, 3
+            phi(j, i) = phi(j, i - 1) + imag(log(f(j, i)/f(j, i - 1)))            
+        end do
+    end do
+
     do i = 2, nt
         do j = 1, 3
             w(j, i - 1) = imag(log(f(j, i)/f(j, i - 1)))/dt
@@ -194,17 +201,25 @@ program sys15f
     do i = 1, nt
         write (1, '(4e17.8)') tax(i), abs(f(1, i)), abs(f(2, i)), abs(f(3, i))
     end do
-    close (2)
+    close (1)
+
     open (2, file='E.dat')
     do i = 1, nt
         write (2, '(5e17.8)') tax(i), eta(1, i), etag(1, i), eta(2, i), etag(2, i)
     end do
     close (2)
+
     open (3, file='W.dat')
     do i = 1, nt - 1
         write (3, '(4e17.8)') tax(i + 1), w(1, i), w(2, i), w(3, i)
     end do
     close (3)
+
+    open (1, file='P.dat')
+    do i = 1, nt
+        write (1, '(4e17.8)') tax(i), phi(1, i), phi(2, i), phi(3, i)
+    end do
+    close (1)
 
 end program
 

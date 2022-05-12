@@ -6,18 +6,18 @@ module fun
     real(c_double), parameter :: pi = 2.0D0*dacos(0.0D0)
 
 contains
-    subroutine allocate_arrays(nz, nt, ne, f, p, u, t, z, mean, eta, etag, w)!, oscill)
+    subroutine allocate_arrays(nz, nt, ne, f, p, u, t, z, mean, eta, etag, w, phi)!, oscill)
         use, intrinsic :: iso_c_binding
         implicit none
 
         integer, intent(in) :: nz, nt, ne
         complex(c_double_complex), allocatable, intent(inout) :: f(:, :), p(:, :), mean(:)!, oscill(:, :)
-        real(c_double), allocatable, intent(inout) :: t(:), z(:), u(:), eta(:, :), etag(:, :), w(:, :)
+        real(c_double), allocatable, intent(inout) :: t(:), z(:), u(:), eta(:, :), etag(:, :), w(:, :), phi(:, :)
 
         integer(c_int) err_alloc
 
         !allocate (f(nt, 3), p1(nz, ne), p2(nz, ne), u(nz), t(nt), z(nz), oscill(nt, 1), stat=err_alloc)
-        allocate (f(3, nt), p(2*ne, nz), u(nz), t(nt), z(nz), mean(nz), eta(2, nt), etag(2, nt), w(3, nt - 1), stat=err_alloc)
+  allocate (f(3, nt), p(2*ne, nz), u(nz), t(nt), z(nz), mean(nz), eta(2, nt), etag(2, nt), w(3, nt - 1), phi(3, nt), stat=err_alloc)
 
         if (err_alloc /= 0) then
             print *, "allocation error"
