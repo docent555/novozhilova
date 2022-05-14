@@ -8,10 +8,10 @@ program sys15f
     namelist /param/ ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, &
         dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
 
-    integer(c_int) ne, nt, nz, i, j
-    real(c_double) tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
+    integer(c_int) ne, nt, nz, i, j, breaknum(3)
+    real(c_double) tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch, phitmp0(3), phitmp1(3)
     complex(c_double_complex), allocatable, target :: f(:, :), p(:, :), mean(:) !, oscill(:, :)
-    real(c_double), allocatable, target :: tax(:), zax(:), u(:), eta(:, :), etag(:, :), w(:, :), phi(:, :)
+    real(c_double), allocatable, target :: tax(:), zax(:), u(:), eta(:, :), etag(:, :), w(:, :), phi(:, :), phios(:, :), wos(:, :)
     type(parametersf) paramf
     type(parametersp) paramp
     !complex(c_double_complex), pointer :: ff(:, :), pp(:, :)
@@ -121,7 +121,7 @@ program sys15f
     nz = zex/dz + 1
 
     !call allocate_arrays(nz, nt, ne, f, p1, p2, u, tax, zax, oscill)
-    call allocate_arrays(nz, nt, ne, f, p, u, tax, zax, mean, eta, etag, w, phi)
+    call allocate_arrays(nz, nt, ne, f, p, u, tax, zax, mean, eta, etag, w, phi, phios)
 
     f(1, 1) = f10
     f(2, 1) = f20
@@ -180,16 +180,36 @@ program sys15f
 
     call ode4f(dfdt, paramf%f, 3, nt, 0.0d0, dt, paramf, paramp)
 
-    phi(:, 1) = 0;  
-    do i = 2, nt
+    do i = 1, nt - 1
         do j = 1, 3
-            phi(j, i) = phi(j, i - 1) + imag(log(f(j, i)/f(j, i - 1)))            
+            w(j, i) = imag(log(f(j, i + 1)/f(j, i)))/dt
         end do
     end do
 
+    phi(:, 1) = 0; 
     do i = 2, nt
         do j = 1, 3
-            w(j, i - 1) = imag(log(f(j, i)/f(j, i - 1)))/dt
+            phi(j, i) = phi(j, i - 1) + imag(log(f(j, i)/f(j, i - 1)))
+        end do
+    end do
+
+    breaknum(:) = 0
+    phitmp0(:) = 0
+    phios(:, 1) = phitmp0(:)
+    do i = 2, nt
+        do j = 1, 3
+            phitmp1(j) = datan2(dimag(f(j, i)), dreal(f(j, i)))
+            if ((phitmp1(j) - phitmp0(j)) .gt. pi) breaknum(j) = breaknum(j) - 1
+            if ((phitmp1(j) - phitmp0(j)) .lt. -pi) breaknum(j) = breaknum(j) + 1
+            phios(j, i) = phitmp1(j) + 2.*pi*breaknum(j)
+            !phios(j, i) = phitmp1(j)
+            phitmp0(j) = phitmp1(j)
+        end do
+    end do
+
+    do i = 1, nt - 1
+        do j = 1, 3
+            wos(j, i) = (phios(j, i + 1) - phios(j, i))/dt
         end do
     end do
 
@@ -200,6 +220,12 @@ program sys15f
     open (1, file='F.dat')
     do i = 1, nt
         write (1, '(4e17.8)') tax(i), abs(f(1, i)), abs(f(2, i)), abs(f(3, i))
+    end do
+    close (1)
+
+    open (1, file='FCOMP.dat')
+    do i = 1, nt
+        write (1, '(7e17.8)') tax(i), real(f(1, i)), imag(f(1, i)), real(f(2, i)), imag(f(2, i)), real(f(3, i)), imag(f(3, i))
     end do
     close (1)
 
@@ -220,6 +246,18 @@ program sys15f
         write (1, '(4e17.8)') tax(i), phi(1, i), phi(2, i), phi(3, i)
     end do
     close (1)
+
+    open (1, file='POS.dat')
+    do i = 1, nt
+        write (1, '(4e17.8)') tax(i), phios(1, i), phios(2, i), phios(3, i)
+    end do
+    close (1)
+
+    open (3, file='WOS.dat')
+    do i = 1, nt - 1
+        write (3, '(4e17.8)') tax(i + 1), wos(1, i), wos(2, i), wos(3, i)
+    end do
+    close (3)
 
 end program
 

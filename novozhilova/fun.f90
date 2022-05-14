@@ -6,18 +6,18 @@ module fun
     real(c_double), parameter :: pi = 2.0D0*dacos(0.0D0)
 
 contains
-    subroutine allocate_arrays(nz, nt, ne, f, p, u, t, z, mean, eta, etag, w, phi)!, oscill)
+    subroutine allocate_arrays(nz, nt, ne, f, p, u, t, z, mean, eta, etag, w, phi, phios)!, oscill)
         use, intrinsic :: iso_c_binding
         implicit none
 
         integer, intent(in) :: nz, nt, ne
         complex(c_double_complex), allocatable, intent(inout) :: f(:, :), p(:, :), mean(:)!, oscill(:, :)
-        real(c_double), allocatable, intent(inout) :: t(:), z(:), u(:), eta(:, :), etag(:, :), w(:, :), phi(:, :)
+        real(c_double), allocatable, intent(inout) :: t(:), z(:), u(:), eta(:, :), etag(:, :), w(:, :), phi(:, :), phios(:, :)
 
         integer(c_int) err_alloc
 
         !allocate (f(nt, 3), p1(nz, ne), p2(nz, ne), u(nz), t(nt), z(nz), oscill(nt, 1), stat=err_alloc)
-  allocate (f(3, nt), p(2*ne, nz), u(nz), t(nt), z(nz), mean(nz), eta(2, nt), etag(2, nt), w(3, nt - 1), phi(3, nt), stat=err_alloc)
+  allocate (f(3, nt), p(2*ne, nz), u(nz), t(nt), z(nz), mean(nz), eta(2, nt), etag(2, nt), w(3, nt - 1), phi(3, nt), phios(3, nt), stat=err_alloc)
 
         if (err_alloc /= 0) then
             print *, "allocation error"
@@ -46,7 +46,8 @@ contains
         use, intrinsic :: iso_c_binding
         implicit none
 
-namelist /param/ ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
+        namelist /param/ ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, &
+            dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
 
         integer(c_int), intent(inout) :: ne
         real(c_double), intent(inout) :: tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
