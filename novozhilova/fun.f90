@@ -6,18 +6,18 @@ module fun
     real(c_double), parameter :: pi = 2.0D0*dacos(0.0D0)
 
 contains
-    subroutine allocate_arrays(nz, nt, ne, f, p, u, t, z, mean, eta, etag, w, phi, phios)!, oscill)
+    subroutine allocate_arrays(nz, nt, ne, f, p, u, t, z, mean, eta, etag, w, wos, phi, phios)!, oscill)
         use, intrinsic :: iso_c_binding
         implicit none
 
         integer, intent(in) :: nz, nt, ne
         complex(c_double_complex), allocatable, intent(inout) :: f(:, :), p(:, :), mean(:)!, oscill(:, :)
-        real(c_double), allocatable, intent(inout) :: t(:), z(:), u(:), eta(:, :), etag(:, :), w(:, :), phi(:, :), phios(:, :)
+   real(c_double), allocatable, intent(inout) :: t(:), z(:), u(:), eta(:, :), etag(:, :), w(:, :), wos(:, :), phi(:, :), phios(:, :)
 
         integer(c_int) err_alloc
 
         !allocate (f(nt, 3), p1(nz, ne), p2(nz, ne), u(nz), t(nt), z(nz), oscill(nt, 1), stat=err_alloc)
-  allocate (f(3, nt), p(2*ne, nz), u(nz), t(nt), z(nz), mean(nz), eta(2, nt), etag(2, nt), w(3, nt - 1), phi(3, nt), phios(3, nt), stat=err_alloc)
+  allocate (f(3, nt), p(2*ne, nz), u(nz), t(nt), z(nz), mean(nz), eta(2, nt), etag(2, nt), w(3, nt - 1), wos(3, nt - 1), phi(3, nt), phios(3, nt), stat=err_alloc)
 
         if (err_alloc /= 0) then
             print *, "allocation error"
@@ -106,8 +106,8 @@ contains
             paramp%eta(:, i + 1) = eff(paramp%p(:, paramp%nz), paramp%ne)
             paramp%etag(:, i + 1) = paramf%pitch**2/(paramf%pitch**2 + 1)*paramp%eta(:, i + 1)
 
-            write (*, '(a,f12.7,a,f10.7,a,f10.7,a,f10.7,a,f10.7,a,f10.7,\,a)') 'Time = ', t + h, '   |F1| = ', abs(y(1, i + 1)), '   |F2| = ', abs(y(2, i + 1)), '   |F3| = ', abs(y(3, i + 1)), &
-                '   Eff1 = ', paramp%eta(1, i + 1), '   Eff2 = ', paramp%eta(2, i + 1), char(13)
+            write (*, '(a,f8.4,a,f11.9,a,f11.9,a,f11.9,a,f11.9,a,f11.9,\,a)') 'Time = ', t + h, '  |F1| = ', abs(y(1, i + 1)), '  |F2| = ', abs(y(2, i + 1)), '  |F3| = ', abs(y(3, i + 1)), &
+                '  Eff1 = ', paramp%eta(1, i + 1), '  Eff2 = ', paramp%eta(2, i + 1), char(13)
 
             pressed = peekcharqq()
             if (pressed) then
@@ -116,17 +116,19 @@ contains
                     write (*, '(/,a)') 'Quit?'
                     key = getcharqq()
                     if (ichar(key) .eq. 121 .or. ichar(key) .eq. 89) then
-                        open (1, file='F.dat')
-                        do j = 1, i + 1
-                            write (1, '(4e17.8)') (j - 1)*h, abs(y(1, j)), abs(y(2, j)), abs(y(3, j))
-                        end do
-                        close (2)
-                        open (2, file='E.dat')
-                        do j = 1, i + 1
-                           write (2, '(5e17.8)') (j - 1)*h, paramp%eta(1, j), paramp%etag(1, j), paramp%eta(2, j), paramp%etag(2, j)
-                        end do
-                        close (2)
-                        stop
+                        paramf%nt = i + 1
+                        return
+                        !open (1, file='F.dat')
+                        !do j = 1, i + 1
+                        !    write (1, '(4e17.8)') (j - 1)*h, abs(y(1, j)), abs(y(2, j)), abs(y(3, j))
+                        !end do
+                        !close (2)
+                        !open (2, file='E.dat')
+                        !do j = 1, i + 1
+                        !   write (2, '(5e17.8)') (j - 1)*h, paramp%eta(1, j), paramp%etag(1, j), paramp%eta(2, j), paramp%etag(2, j)
+                        !end do
+                        !close (2)
+                        !stop
                     end if
                 end if
             end if

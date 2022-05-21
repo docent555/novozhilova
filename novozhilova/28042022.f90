@@ -121,7 +121,7 @@ program sys15f
     nz = zex/dz + 1
 
     !call allocate_arrays(nz, nt, ne, f, p1, p2, u, tax, zax, oscill)
-    call allocate_arrays(nz, nt, ne, f, p, u, tax, zax, mean, eta, etag, w, phi, phios)
+    call allocate_arrays(nz, nt, ne, f, p, u, tax, zax, mean, eta, etag, w, wos, phi, phios)
 
     f(1, 1) = f10
     f(2, 1) = f20
@@ -179,6 +179,8 @@ program sys15f
     write (*, '(/)')
 
     call ode4f(dfdt, paramf%f, 3, nt, 0.0d0, dt, paramf, paramp)
+
+    nt = paramf%nt
 
     do i = 1, nt - 1
         do j = 1, 3
