@@ -2,14 +2,16 @@ program sys15f
     use, intrinsic :: iso_c_binding
     use types
     use fun
+    use ifport
 
     implicit none
 
     namelist /param/ ne, tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, &
         dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch
 
-    integer(c_int) ne, nt, nz, i, j, breaknum(3)
-    real(c_double) tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch, phitmp0(3), phitmp1(3)
+    integer(c_int) ne, nt, nz, i, j, breaknum(3), hours, minutes, seconds
+    real(c_double) tend, zex, q1, q2, q3, i1, i2, th1, th2, a1, a2, dtr1, dtr2, dcir1, dcir2, r1, r2, f10, f20, f30, dt, dz, pitch, phitmp0(3), phitmp1(3), &
+        start_time, stop_time, calc_time
     complex(c_double_complex), allocatable, target :: f(:, :), p(:, :), mean(:) !, oscill(:, :)
     real(c_double), allocatable, target :: tax(:), zax(:), u(:), eta(:, :), etag(:, :), w(:, :), phi(:, :), phios(:, :), wos(:, :)
     type(parametersf) paramf
@@ -177,9 +179,20 @@ program sys15f
     !oscill(1, 1) = 0.0d0 + ic*1.0d0
 
     write (*, '(/)')
-
+    
+    start_time = dclock()
     call ode4f(dfdt, paramf%f, 3, nt, 0.0d0, dt, paramf, paramp)
+    stop_time = dclock()
+    
+    calc_time = stop_time - start_time
+    
+    hours = calc_time/3600
+    minutes = (calc_time - hours*3600)/60
+    seconds = calc_time - hours*3600 - minutes*60
 
+    write (*, '(/)')
+    print *, 'Calcualting took:', hours, 'h :', minutes, 'm :', seconds, 's'
+    
     nt = paramf%nt
 
     do i = 1, nt - 1
